@@ -7,6 +7,7 @@ use core::marker::PhantomData;
 extern crate embedded_hal;
 use embedded_hal::blocking::i2c;
 
+#[macro_use] extern crate log;
 
 /// Sdc30 sensor object
 /// This is generic over an I2C connector and associated error type
@@ -302,17 +303,27 @@ impl <Conn, Err> Base<Err> for Sdc30 <Conn, Err> where
             None => 2,
         };
 
+        trace!("Writing command: {:?} data: {:?}", c, data);
+
         self.conn.write(DEFAULT_ADDRESS | I2C_WRITE_FLAG, &buff[..len]).map_err(|e| Error::Conn(e) )
     }
+    
     fn read_command(&mut self, command: Command, data: &mut [u8]) -> Result<(), Error<Err>> {
         // Write command to initialise read
         let c = command as u16;
+
+        trace!("Writing command: {:x?}", c);
+
         self.conn.write(DEFAULT_ADDRESS | I2C_WRITE_FLAG, &[(c >> 8) as u8, (c & 0xFF) as u8])
             .map_err(|e| Error::Conn(e) )?;
 
         // Read data back
         self.conn.read(DEFAULT_ADDRESS | I2C_READ_FLAG, data)
-            .map_err(|e| Error::Conn(e) )
+            .map_err(|e| Error::Conn(e) )?;
+
+        trace!("Read data: {:x?}", data);
+
+        Ok(())
     }
 }
 
