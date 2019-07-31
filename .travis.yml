@@ -1,0 +1,40 @@
+language: rust
+cache: cargo
+matrix:
+  include:
+  - env: TARGET=x86_64-unknown-linux-gnu
+    os: linux
+  - env: TARGET=armv7-unknown-linux-gnueabihf
+    os: linux
+    addons:
+      apt:
+        packages:
+        - libc6-i386
+        - libc6-dev-i386
+        - gcc-arm-linux-gnueabihf
+        - libc6-armhf-cross
+        - libc6-dev-armhf-cross
+
+install:
+- cargo fetch
+- rustup target add armv7-unknown-linux-gnueabihf
+- rustup component add rustfmt
+
+script:
+- cargo build && cargo test && cargo build --target=$TARGET --release
+
+before_deploy:
+- tar -cvf target/sdc30-util-$TARGET-$TRAVIS_TAG.tgz -C target/$TARGET/release/ sdc30-util
+
+deploy:
+  provider: releases
+  api_key:
+    secure: Nh2AN72+buAZSLBJJ4zjpHgjwlUyJET0nXrT4J6YXkKQqtdXksYzFYbiBw9Oephmk5yjgwxQNxxFVr3akZ34f5hP4zlNJwtsZkmiTzhdSQdps5h5H581pftavhI0kQ48V5brhUlatFyzHk3sx80F/dKljjKdcznQlq7TpV/nZLnA9n85TMrIUFCpoByVY/1mR2oiTf8UELzBRID7dyNw2cuWORYkSBJmYaojfOMis2T+jgVlKY6fHQf60yGXuT7rNOkWmOF0jNVHrsZnSbIe0FKdewUjfQmvZub/Ab4luuyKrgTZ8hm8vinw9aqnCTYmiUFZiiQYAY/8kpNgZgpKVozPq5vRRAnVetMJxShaIgr84WxJo/7jkYFIZVMPOPFNwvLEXX7YSE1uZx5rH9nZ/EDlqRFCBTrtokW92vQ1bTc15vmnM3A1c3Ufv9yLIWyExNQuSV0fc33lchT9wBTAjoyYtUez0Witg/NJrZpaEORmzBhP62t6DfqFRz3AFSm+AL5ehdnDdqn7jidmJKX69omeu4iinGypcFKMkXaSqOdv1b+Oxq+ug1zyHmH018HWAA5fwDb9HUt0zFxRXY8PPpKaiSUaKrrhI2o5Gcewlz/9rlkpdFstOFIzDmwjElkkaoHsexaIyrcRXPTqFr19aRIND5rf3zsmImLGS11R/9w=
+  file: target/*.tgz
+  file_glob: true
+  skip_cleanup: true
+  on:
+    tags: true
+    repo: ryankurte/rust-sensor-sdc30
+
+
