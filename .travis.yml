@@ -17,6 +17,7 @@ matrix:
 
 install:
 - cargo fetch
+- cargo install cargo-deb
 - rustup target add armv7-unknown-linux-gnueabihf
 - rustup component add rustfmt
 
@@ -37,4 +38,7 @@ deploy:
     tags: true
     repo: ryankurte/rust-sensor-sdc30
 
-
+notifications:
+  email:
+    on_success: never
+    on_failure: never

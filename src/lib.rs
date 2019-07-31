@@ -26,7 +26,7 @@ pub const CRC_INIT: u8 = 0xff;
 pub const CRC_XOR: u8 = 0x00;
 
 /// Sdc30 error object
-#[derive(PartialEq, Clone, Debug)]
+#[derive(Debug)]
 pub enum Error<ConnErr> {
     Conn(ConnErr),
     Crc(u8, u8),
@@ -105,7 +105,7 @@ pub enum Command {
 
 impl <Conn, Err> Sdc30 <Conn, Err> where
     Conn: i2c::Read<Error=Err> + i2c::Write<Error=Err> + i2c::WriteRead<Error=Err>,
-    Err: PartialEq + Clone + Debug,
+    Err: Debug,
 {
     /// Create a new Sdc30 sensor instance
     pub fn new(conn: Conn) -> Result<Self, Error<Err>> {
@@ -271,13 +271,15 @@ impl <Conn, Err> Sdc30 <Conn, Err> where
 /// Base API for reading and writing to the device
 /// This should not be required by consumers, but is exposed to support alternate use
 pub trait Base<Err> {
+    /// Write a command to the device with optional data
     fn write_command(&mut self, command: Command, data: Option<u16>) -> Result<(), Error<Err>>;
+    /// Read information from the device
     fn read_command(&mut self, command: Command, data: &mut [u8]) -> Result<(), Error<Err>>;
 }
 
 impl <Conn, Err> Base<Err> for Sdc30 <Conn, Err> where
     Conn: i2c::Read<Error=Err> + i2c::Write<Error=Err> + i2c::WriteRead<Error=Err>,
-    Err: PartialEq + Clone + Debug,
+    Err: Debug,
 {
     fn write_command(&mut self, command: Command, data: Option<u16>) -> Result<(), Error<Err>> {
         let c = command as u16;
