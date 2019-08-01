@@ -1,8 +1,37 @@
 //! Sdc30 driver library
 //! 
 //! Copyright 2019 Ryan Kurte
+//! 
+//! ``` no_run
+//! use std::time::Duration;
+//! use linux_embedded_hal::I2cdev;
+//! use sensor_sdc30::Sdc30;
+//! 
+//! // Open I2C port
+//! let i2c = I2cdev::new("/dev/i2c-1").unwrap();
+//! 
+//! // Connect to sensor
+//! let mut sdc = Sdc30::new(i2c).unwrap();
+//! 
+//! // Start continuous sampling mode
+//! sdc.start_continuous(10).unwrap();
+//! 
+//! // Poll for data
+//! loop {
+//!     // Keep looping until ready
+//!     if sdc.data_ready().unwrap() {
+//!         continue;
+//!     }
+//! 
+//!     // Fetch data when available
+//!     let m = sdc.read_data().unwrap();
+//!     println!("Measurement: {:?}", m);
+//! }
+//! 
+//! 
+//! ```
 
-//#![no_std]
+#![no_std]
 
 use core::fmt::Debug;
 use core::marker::PhantomData;
