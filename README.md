@@ -22,6 +22,7 @@ Install the utility with one of the following methods:
 
 Run `sdc30-util` to communicate with the sensor.
 
+Help:
 ```
 pi@raspberrypi:~ $ sudo ./sdc30-util --help
 sdc30-util 0.1.0
@@ -41,4 +42,11 @@ OPTIONS:
         --log-level <level>          Enable verbose logging [default: info]
     -p, --sample-period <period>     Specify period for taking measurements [default: 10s]
         --poll-delay <poll_delay>    Delay between sensor poll operations [default: 100ms]
+```
+
+Example output:
+```
+pi@raspberrypi:~ $ ./sdc30-util -p 2s
+04:01:00 [INFO] CO2: 556.21 ppm, Temperature: 19.15 C, Humidity: 49.39 %
+04:01:02 [INFO] CO2: 553.72 ppm, Temperature: 19.13 C, Humidity: 49.44 %
 ```
