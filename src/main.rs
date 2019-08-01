@@ -102,8 +102,7 @@ fn main() {
         match (ready, sensor.read_data()) {
             (false, _) => (),
             (true, Ok(m)) => {
-                info!("New measurement: {:?}", m);
-                break;
+                info!("CO2: {:.2} ppm, Temperature: {:.2} C, Humidity: {:.2}", m.co2, m.temp, m.rh);
             },
             (true, Err(e)) => {
                 error!("Error reading sensor data: {:?}", e);
