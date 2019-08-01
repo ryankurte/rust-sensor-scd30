@@ -1,3 +1,6 @@
+//! Sdc30 command-line utility
+//! 
+//! Copyright 2019 Ryan Kurte
 
 extern crate embedded_hal;
 extern crate linux_embedded_hal;
@@ -17,8 +20,8 @@ extern crate sensor_sdc30;
 use sensor_sdc30::Sdc30;
 
 #[derive(StructOpt)]
-#[structopt(name = "Sdc30-util")]
-/// A Command Line Interface (CLI) for interacting with a local Sdc30 environmental sensor
+#[structopt(name = "sdc30-util")]
+/// A Command Line Interface (CLI) for interacting with a local Sdc30 environmental sensor over I2C
 pub struct Options {
 
     /// Specify the i2c interface to use to connect to the sdc30 device

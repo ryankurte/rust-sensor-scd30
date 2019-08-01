@@ -1,3 +1,6 @@
+//! Sdc30 driver library
+//! 
+//! Copyright 2019 Ryan Kurte
 
 //#![no_std]
 
@@ -9,22 +12,18 @@ use embedded_hal::blocking::i2c;
 
 #[macro_use] extern crate log;
 
+pub mod device;
+use device::*;
+
+pub mod base;
+use base::*;
+
 /// Sdc30 sensor object
 /// This is generic over an I2C connector and associated error type
 pub struct Sdc30<Conn, Err> {
     conn: Conn,
     _err: PhantomData<Err>,
 }
-
-/// Sdc30 default I2C address
-pub const DEFAULT_ADDRESS: u8 = 0x61;
-
-pub const I2C_WRITE_FLAG: u8 = 0x00;
-pub const I2C_READ_FLAG:  u8 = 0x01;
-
-pub const CRC_POLY: u8 = 0x31;
-pub const CRC_INIT: u8 = 0xff;
-pub const CRC_XOR: u8 = 0x00;
 
 /// Sdc30 error object
 #[derive(Debug)]
@@ -53,56 +52,6 @@ pub struct Measurement {
     /// Range: 0 - 100
     pub rh: f32,
 }
-
-/// Sdc30 I2C Command
-/// Command and data are big endian 16-bit unsigned integers, all Command with data are followed by a CRC-8 checksum
-#[derive(PartialEq, Clone, Debug)]
-pub enum Command {
-    /// Start continuous mode
-    /// Data is a u16 representing pressure in mBar for compensation
-    /// or zero for no pressure compensation
-    StartContinuousMode = 0x0010,
-
-    /// Stop continuous mode
-    /// No associated data or CRC
-    StopContinuousMode = 0x0104,
-
-    /// Set interval for continuous measurement mode
-    /// Data is a u16 in seconds between 2 and 1800
-    SetMeasurementInterval = 0x4600,
-
-    /// Fetch data ready status
-    /// This returns 1 if data is available in the buffer, 0 otherwise
-    GetDataReady = 0x0202,
-
-    /// Read a measurement from the buffer
-    ReadMeasurement = 0x0300,
-
-    /// Enable or Disable Automatic Self Calibration (ASC)
-    /// Data is a u16, 1 enables ASC and 0 disables ASC
-    SetAfc = 0x5306,
-
-    /// Set Forced Recalibration Value (FRC)
-    /// This is used to compensate for sensor drift when a CO2 reference value is available
-    /// Data is a u16 CO2 concentration in ppm
-    SetFrc = 0x5204,
-
-    /// Set temperature offset
-    /// Data is a uint16 in degrees celsius * 100, ie. 43 degrees -> 430u16
-    SetTempOffset = 0x5403,
-
-    /// Set altitude compensation
-    /// This allows NDIR CO2 sensing to be calibrated by altitude
-    /// Data is uint16 in meters above sea level
-    SetAltComp = 0x5102,
-
-    /// Soft Reset the device
-    /// No associated data or CRC
-    SoftReset = 0xd304,
-
-    GetFirmwareVersion = 0xD100,
-}
-
 
 impl <Conn, Err> Sdc30 <Conn, Err> where
     Conn: i2c::Read<Error=Err> + i2c::Write<Error=Err> + i2c::WriteRead<Error=Err>,
@@ -175,6 +124,7 @@ impl <Conn, Err> Sdc30 <Conn, Err> where
         self.write_command(Command::SoftReset, None)
     }
 
+    /// Fetch the device firmware version
     pub fn firmware_version(&mut self) -> Result<u16, Error<Err>> {
         let mut buff = [0u8; 3];
 
@@ -269,63 +219,7 @@ impl <Conn, Err> Sdc30 <Conn, Err> where
     }
 }
 
-/// Base API for reading and writing to the device
-/// This should not be required by consumers, but is exposed to support alternate use
-pub trait Base<Err> {
-    /// Write a command to the device with optional data
-    fn write_command(&mut self, command: Command, data: Option<u16>) -> Result<(), Error<Err>>;
-    /// Read information from the device
-    fn read_command(&mut self, command: Command, data: &mut [u8]) -> Result<(), Error<Err>>;
-}
 
-impl <Conn, Err> Base<Err> for Sdc30 <Conn, Err> where
-    Conn: i2c::Read<Error=Err> + i2c::Write<Error=Err> + i2c::WriteRead<Error=Err>,
-    Err: Debug,
-{
-    fn write_command(&mut self, command: Command, data: Option<u16>) -> Result<(), Error<Err>> {
-        let c = command as u16;
-
-        let mut buff: [u8; 5] = [
-            (c >> 8) as u8,
-            (c & 0xFF) as u8,
-            0,
-            0,
-            0,
-        ];
-
-        let len = match data {
-            Some(d) => {
-                buff[2] = (d >> 8) as u8;
-                buff[3] = (d & 0xFF) as u8;
-                buff[4] = Self::crc(&buff[2..4]);
-                5
-            },
-            None => 2,
-        };
-
-        trace!("Writing command: {:?} data: {:?}", c, data);
-
-        self.conn.write(DEFAULT_ADDRESS | I2C_WRITE_FLAG, &buff[..len]).map_err(|e| Error::Conn(e) )
-    }
-    
-    fn read_command(&mut self, command: Command, data: &mut [u8]) -> Result<(), Error<Err>> {
-        // Write command to initialise read
-        let c = command as u16;
-
-        trace!("Writing command: {:x?}", c);
-
-        self.conn.write(DEFAULT_ADDRESS | I2C_WRITE_FLAG, &[(c >> 8) as u8, (c & 0xFF) as u8])
-            .map_err(|e| Error::Conn(e) )?;
-
-        // Read data back
-        self.conn.read(DEFAULT_ADDRESS | I2C_READ_FLAG, data)
-            .map_err(|e| Error::Conn(e) )?;
-
-        trace!("Read data: {:x?}", data);
-
-        Ok(())
-    }
-}
 
 #[cfg(test)]
 mod test {
