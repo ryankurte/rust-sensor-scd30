@@ -8,7 +8,6 @@ use core::fmt::Debug;
 use core::marker::PhantomData;
 
 extern crate embedded_hal;
-use embedded_hal::blocking::i2c;
 
 #[macro_use] extern crate log;
 
@@ -54,7 +53,7 @@ pub struct Measurement {
 }
 
 impl <Conn, Err> Sdc30 <Conn, Err> where
-    Conn: i2c::Read<Error=Err> + i2c::Write<Error=Err> + i2c::WriteRead<Error=Err>,
+    Conn: Base<Err>,
     Err: Debug,
 {
     /// Create a new Sdc30 sensor instance
@@ -75,17 +74,17 @@ impl <Conn, Err> Sdc30 <Conn, Err> where
     /// Start continuous sensing mode with optional pressure compensation
     /// pressure_compensation should either be the current pressure in millibar or 0 to disable compensation
     pub fn start_continuous(&mut self, pressure_compensation: u16) -> Result<(), Error<Err>> {
-        self.write_command(Command::StartContinuousMode, Some(pressure_compensation))
+        self.conn.write_command(Command::StartContinuousMode, Some(pressure_compensation))
     }
 
     /// Stop continuous sensing mode
     pub fn stop_continuous(&mut self) -> Result<(), Error<Err>> {
-        self.write_command(Command::StopContinuousMode, None) 
+        self.conn.write_command(Command::StopContinuousMode, None) 
     }
 
     /// Configure measurement interval in seconds
     pub fn set_measurement_interval(&mut self, interval: u16) -> Result<(), Error<Err>> {
-        self.write_command(Command::SetMeasurementInterval, Some(interval))
+        self.conn.write_command(Command::SetMeasurementInterval, Some(interval))
     }
 
 
@@ -96,41 +95,41 @@ impl <Conn, Err> Sdc30 <Conn, Err> where
             false => 0,
         };
 
-        self.write_command(Command::SetAfc, Some(v))
+        self.conn.write_command(Command::SetAfc, Some(v))
     }
 
 
     /// Set Forced Recalibration Value
     /// This allows the sensor to be recalibrates using a reference CO2 source
     pub fn set_frc(&mut self, cal_ppm: u16) -> Result<(), Error<Err>> {
-        self.write_command(Command::SetFrc, Some(cal_ppm))
+        self.conn.write_command(Command::SetFrc, Some(cal_ppm))
     }
 
     /// Set Temperature Compensation
     /// Allows compensation for temperature variation during operation
     pub fn set_temp_offset(&mut self, temperature: f32) -> Result<(), Error<Err>> {
         let temperature = (temperature as u16) * 100;
-        self.write_command(Command::SetTempOffset, Some(temperature))
+        self.conn.write_command(Command::SetTempOffset, Some(temperature))
     }
 
     /// Set Altitude Compensation
     /// Allows compensation for CO2 measurement using altitude over sea level
     pub fn set_alt_offset(&mut self, altitude: u16) -> Result<(), Error<Err>> {
-        self.write_command(Command::SetAltComp, Some(altitude))
+        self.conn.write_command(Command::SetAltComp, Some(altitude))
     }
 
     /// Soft reset the underlying device
     pub fn soft_reset(&mut self) -> Result<(), Error<Err>> {
-        self.write_command(Command::SoftReset, None)
+        self.conn.write_command(Command::SoftReset, None)
     }
 
     /// Fetch the device firmware version
     pub fn firmware_version(&mut self) -> Result<u16, Error<Err>> {
         let mut buff = [0u8; 3];
 
-        self.read_command(Command::GetFirmwareVersion, &mut buff)?;
+        self.conn.read_command(Command::GetFirmwareVersion, &mut buff)?;
 
-        let crc = Self::crc(&buff[..2]);
+        let crc = crc8(&buff[..2]);
         if crc != buff[2] {
             return Err(Error::Crc(crc, buff[2]));
         }
@@ -144,9 +143,9 @@ impl <Conn, Err> Sdc30 <Conn, Err> where
     pub fn data_ready(&mut self) -> Result<bool, Error<Err>> {
         let mut buff = [0u8; 3];
 
-        self.read_command(Command::GetDataReady, &mut buff)?;
+        self.conn.read_command(Command::GetDataReady, &mut buff)?;
 
-        let crc = Self::crc(&buff[..2]);
+        let crc = crc8(&buff[..2]);
         if crc != buff[2] {
             return Err(Error::Crc(crc, buff[2]));
         }
@@ -158,7 +157,7 @@ impl <Conn, Err> Sdc30 <Conn, Err> where
     pub fn read_data(&mut self) -> Result<Measurement, Error<Err>> {
         let mut buff = [0u8; 18];
 
-        self.read_command(Command::ReadMeasurement, &mut buff)?;
+        self.conn.read_command(Command::ReadMeasurement, &mut buff)?;
 
         let co2 = Self::convert(&buff[0..6])?;
         let temp = Self::convert(&buff[6..12])?;
@@ -174,12 +173,12 @@ impl <Conn, Err> Sdc30 <Conn, Err> where
         assert_eq!(line.len(), 6);
 
         // Check CRC
-        let crc1 = Self::crc(&line[0..2]);
+        let crc1 = crc8(&line[0..2]);
         if crc1 != line[2] {
             return Err(Error::Crc(crc1, line[2]));
         }
 
-        let crc2 = Self::crc(&line[3..5]);
+        let crc2 = crc8(&line[3..5]);
         if crc2 != line[5] {
             return Err(Error::Crc(crc2, line[5]));
         }
@@ -193,29 +192,6 @@ impl <Conn, Err> Sdc30 <Conn, Err> where
         let v = f32::from_bits(u);
 
         Ok(v)
-    }
-
-    /// Helper for device CRC-8 calculation
-    fn crc(data: &[u8]) -> u8 {
-        let mut crc = CRC_INIT;
-
-        // For each byte
-        for v in data {
-            // XOR with current byte
-            crc ^= v;
-
-            // For each bit (in -ve order, but, doesn't actually matter here)
-            for _bit in 0..8 {
-                if crc & 0x80 != 0 {
-                    crc = (crc << 1) ^ CRC_POLY;
-                } else {
-                    crc = crc << 1;
-                }
-            }
-        }
-
-        // Apply final xor    
-        crc ^ CRC_XOR
     }
 }
 
@@ -406,22 +382,6 @@ mod test {
 
         // Finalize expectations
         i2c.done();
-    }
-
-    #[test]
-    fn test_crc() {
-        // Test vectors from datasheet
-        let tests = &[
-            ([0xbe, 0xef], 0x92),
-            ([0x00, 0x00], 0x81),
-            ([0x43, 0xDB], 0xCB),
-        ];
-
-        for t in tests {
-            let v = Sdc30::<I2cMock, MockError>::crc(&t.0);
-            assert_eq!(v, t.1);
-        }
-        
     }
 
     #[test]
