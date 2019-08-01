@@ -1,4 +1,4 @@
-//! Base communication implementation for interacting with Sdc30 device
+//! Base communication implementation for interacting with Scd30 device
 //! 
 //! Copyright 2019 Ryan Kurte
 

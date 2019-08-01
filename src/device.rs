@@ -1,9 +1,9 @@
-//! Sdc30 device definitions
+//! Scd30 device definitions
 //! 
 //! Copyright 2019 Ryan Kurte
 
 
-/// Sdc30 default I2C address
+/// Scd30 default I2C address
 pub const DEFAULT_ADDRESS: u8 = 0x61;
 
 pub const I2C_WRITE_FLAG: u8 = 0x00;
@@ -13,7 +13,7 @@ pub const CRC_POLY: u8 = 0x31;
 pub const CRC_INIT: u8 = 0xff;
 pub const CRC_XOR: u8 = 0x00;
 
-/// Sdc30 I2C Command
+/// Scd30 I2C Command
 /// Command and data are big endian 16-bit unsigned integers, all Command with data are followed by a CRC-8 checksum
 #[derive(PartialEq, Clone, Debug)]
 pub enum Command {

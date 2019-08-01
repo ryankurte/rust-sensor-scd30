@@ -1,30 +1,30 @@
-//! Sdc30 driver library
+//! Scd30 driver library
 //! 
 //! Copyright 2019 Ryan Kurte
 //! 
 //! ``` no_run
 //! use std::time::Duration;
 //! use linux_embedded_hal::I2cdev;
-//! use sensor_sdc30::Sdc30;
+//! use sensor_scd30::Scd30;
 //! 
 //! // Open I2C port
 //! let i2c = I2cdev::new("/dev/i2c-1").unwrap();
 //! 
 //! // Connect to sensor
-//! let mut sdc = Sdc30::new(i2c).unwrap();
+//! let mut scd = Scd30::new(i2c).unwrap();
 //! 
 //! // Start continuous sampling mode
-//! sdc.start_continuous(10).unwrap();
+//! scd.start_continuous(10).unwrap();
 //! 
 //! // Poll for data
 //! loop {
 //!     // Keep looping until ready
-//!     if sdc.data_ready().unwrap() {
+//!     if scd.data_ready().unwrap() {
 //!         continue;
 //!     }
 //! 
 //!     // Fetch data when available
-//!     let m = sdc.read_data().unwrap();
+//!     let m = scd.read_data().unwrap();
 //!     println!("Measurement: {:?}", m);
 //! }
 //! 
@@ -46,14 +46,14 @@ use device::*;
 pub mod base;
 use base::*;
 
-/// Sdc30 sensor object
+/// Scd30 sensor object
 /// This is generic over an I2C connector and associated error type
-pub struct Sdc30<Conn, Err> {
+pub struct Scd30<Conn, Err> {
     conn: Conn,
     _err: PhantomData<Err>,
 }
 
-/// Sdc30 error object
+/// Scd30 error object
 #[derive(Debug)]
 pub enum Error<ConnErr> {
     Conn(ConnErr),
@@ -67,7 +67,7 @@ impl <ConnErr> From<ConnErr> for Error<ConnErr> {
     }
 }
 
-/// Sdc30 measurement object
+/// Scd30 measurement object
 #[derive(PartialEq, Clone, Debug)]
 pub struct Measurement {
     /// CO2 concentration in parts-per-million (PPM)
@@ -81,14 +81,14 @@ pub struct Measurement {
     pub rh: f32,
 }
 
-impl <Conn, Err> Sdc30 <Conn, Err> where
+impl <Conn, Err> Scd30 <Conn, Err> where
     Conn: Base<Err>,
     Err: Debug,
 {
-    /// Create a new Sdc30 sensor instance
+    /// Create a new Scd30 sensor instance
     pub fn new(conn: Conn) -> Result<Self, Error<Err>> {
         // Create sensor object
-        let mut s = Sdc30{ conn, _err: PhantomData };
+        let mut s = Scd30{ conn, _err: PhantomData };
 
         // Check communication
         let v = s.firmware_version()?;
@@ -249,7 +249,7 @@ mod test {
         let mut i2c = I2cMock::new(&expectations);
 
         // Create sensor object
-        let mut sensor = Sdc30{ conn: i2c.clone(), _err: PhantomData };
+        let mut sensor = Scd30{ conn: i2c.clone(), _err: PhantomData };
 
         // Start continuous mode
         sensor.start_continuous(0).unwrap();
@@ -267,7 +267,7 @@ mod test {
         let mut i2c = I2cMock::new(&expectations);
 
         // Create sensor object
-        let mut sensor = Sdc30{ conn: i2c.clone(), _err: PhantomData };
+        let mut sensor = Scd30{ conn: i2c.clone(), _err: PhantomData };
 
         // Stop continuous mode
         sensor.stop_continuous().unwrap();
@@ -285,7 +285,7 @@ mod test {
         let mut i2c = I2cMock::new(&expectations);
 
         // Create sensor object
-        let mut sensor = Sdc30{ conn: i2c.clone(), _err: PhantomData };
+        let mut sensor = Scd30{ conn: i2c.clone(), _err: PhantomData };
 
         // Set measurement interval to 2s
         sensor.set_measurement_interval(2).unwrap();
@@ -303,7 +303,7 @@ mod test {
         let mut i2c = I2cMock::new(&expectations);
 
         // Create sensor object
-        let mut sensor = Sdc30{ conn: i2c.clone(), _err: PhantomData };
+        let mut sensor = Scd30{ conn: i2c.clone(), _err: PhantomData };
 
         // Set forced recalibration to 450ppm
         sensor.set_frc(450).unwrap();
@@ -321,7 +321,7 @@ mod test {
         let mut i2c = I2cMock::new(&expectations);
 
         // Create sensor object
-        let mut sensor = Sdc30{ conn: i2c.clone(), _err: PhantomData };
+        let mut sensor = Scd30{ conn: i2c.clone(), _err: PhantomData };
 
         // Set temperature to 5 degrees
         sensor.set_temp_offset(5.0).unwrap();
@@ -339,7 +339,7 @@ mod test {
         let mut i2c = I2cMock::new(&expectations);
 
         // Create sensor object
-        let mut sensor = Sdc30{ conn: i2c.clone(), _err: PhantomData };
+        let mut sensor = Scd30{ conn: i2c.clone(), _err: PhantomData };
 
         // Set altitude to 1000m
         sensor.set_alt_offset(1000).unwrap();
@@ -357,7 +357,7 @@ mod test {
         let mut i2c = I2cMock::new(&expectations);
 
         // Create sensor object
-        let mut sensor = Sdc30{ conn: i2c.clone(), _err: PhantomData };
+        let mut sensor = Scd30{ conn: i2c.clone(), _err: PhantomData };
 
         // Signal for soft reset
         sensor.soft_reset().unwrap();
@@ -376,7 +376,7 @@ mod test {
         let mut i2c = I2cMock::new(&expectations);
 
         // Create sensor object
-        let mut sensor = Sdc30{ conn: i2c.clone(), _err: PhantomData };
+        let mut sensor = Scd30{ conn: i2c.clone(), _err: PhantomData };
 
         // Read data ready
         let ready = sensor.data_ready().unwrap();
@@ -400,7 +400,7 @@ mod test {
         let mut i2c = I2cMock::new(&expectations);
 
         // Create sensor object
-        let mut sensor = Sdc30{ conn: i2c.clone(), _err: PhantomData };
+        let mut sensor = Scd30{ conn: i2c.clone(), _err: PhantomData };
 
         // Read measurement
         let m = sensor.read_data().unwrap();
@@ -423,7 +423,7 @@ mod test {
         ];
 
         for t in tests {
-            let v = Sdc30::<I2cMock, MockError>::convert(&t.0).unwrap();
+            let v = Scd30::<I2cMock, MockError>::convert(&t.0).unwrap();
             assert_approx_eq!(v, t.1, 0.1);
         }
     }

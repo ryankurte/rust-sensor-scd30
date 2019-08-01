@@ -1,4 +1,4 @@
-//! Sdc30 command-line utility
+//! Scd30 command-line utility
 //! 
 //! Copyright 2019 Ryan Kurte
 
@@ -16,16 +16,16 @@ use humantime::{Duration as HumanDuration};
 extern crate simplelog;
 use simplelog::{TermLogger, LevelFilter};
 
-extern crate sensor_sdc30;
-use sensor_sdc30::Sdc30;
+extern crate sensor_scd30;
+use sensor_scd30::Scd30;
 
 #[derive(StructOpt)]
-#[structopt(name = "sdc30-util")]
-/// A Command Line Interface (CLI) for interacting with a local Sdc30 environmental sensor over I2C
+#[structopt(name = "scd30-util")]
+/// A Command Line Interface (CLI) for interacting with a local Scd30 environmental sensor over I2C
 pub struct Options {
 
-    /// Specify the i2c interface to use to connect to the sdc30 device
-    #[structopt(short="d", long = "i2c", default_value = "/dev/i2c-1", env = "SDC30_I2C")]
+    /// Specify the i2c interface to use to connect to the scd30 device
+    #[structopt(short="d", long = "i2c", default_value = "/dev/i2c-1", env = "SCD30_I2C")]
     i2c: String,
 
     /// Specify period for taking measurements
@@ -57,11 +57,11 @@ fn main() {
         }
     };
 
-    debug!("Connecting to SDC30");
-    let mut sensor = match Sdc30::new(i2c) {
+    debug!("Connecting to SCD30");
+    let mut sensor = match Scd30::new(i2c) {
         Ok(v) => v,
         Err(e) => {
-            error!("Error connecting to SDC30: {:?}", e);
+            error!("Error connecting to SCD30: {:?}", e);
             std::process::exit(-2);
         }
     };

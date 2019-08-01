@@ -24,7 +24,7 @@ script:
 - cargo build && cargo test && cargo build --target=$TARGET --release
 
 before_deploy:
-- tar -cvf target/sdc30-util-$TARGET-$TRAVIS_TAG.tgz -C target/$TARGET/release/ sdc30-util
+- tar -cvf target/scd30-util-$TARGET-$TRAVIS_TAG.tgz -C target/$TARGET/release/ scd30-util
 
 deploy:
   provider: releases
@@ -35,7 +35,7 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
-    repo: ryankurte/rust-sensor-sdc30
+    repo: ryankurte/rust-sensor-scd30
 
 notifications:
   email:
