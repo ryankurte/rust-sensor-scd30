@@ -1,6 +1,8 @@
 [package]
 name = "sensor-sdc30"
 description = "SDC30 environmental sensor driver"
+repository = "https://github.com/ryankurte/rust-sensor-sdc30"
+keywords = ["embedded", "embedded-hal", "sdc30", "sensor", "i2c"]
 version = "0.1.0"
 authors = ["Ryan Kurte <ryankurte@gmail.com>"]
 edition = "2018"
