@@ -36,6 +36,10 @@ pub struct Options {
     #[structopt(long = "poll-delay", default_value="100ms")]
     pub poll_delay: HumanDuration,
 
+    /// Number of allowed I2C errors (per measurement attempt) prior to exiting
+    #[structopt(long = "allowed-errors", default_value="3")]
+    pub allowed_errors: usize,
+
     /// Enable verbose logging
     #[structopt(long = "log-level", default_value = "info")]
     level: LevelFilter,
@@ -78,8 +82,10 @@ fn main() {
     loop {
         debug!("Starting sensor read cycle");
 
-        // Poll for sensor ready
         let mut ready = false;
+        let mut errors = 0;
+
+        // Poll for sensor ready
         for _i in 0..100 {
             match sensor.data_ready() {
                 Ok(true) => {
@@ -88,27 +94,45 @@ fn main() {
                 },
                 Ok(false) => {
                     std::thread::sleep(*opts.poll_delay);
-                }
+                },
                 Err(e) => {
-                    error!("Error polling for sensor ready: {:?}", e);
-                    std::process::exit(-4);
+                    warn!("Error polling for sensor ready: {:?}", e);
+                    errors += 1;
                 }
             };
+
+            if errors > opts.allowed_errors {
+                error!("Exceeded maximum allowed I2C errors");
+                std::process::exit(-4);
+            }
         }
 
         debug!("Sensor data ready state: {:?}", ready);
 
+        if !ready {
+            warn!("Sensor data ready timed-out");
+            std::thread::sleep(*opts.period);
+            continue;
+        }
+
         // If we're ready, attempt to read the data
-        match (ready, sensor.read_data()) {
-            (false, _) => (),
-            (true, Ok(m)) => {
-                info!("CO2: {:.2} ppm, Temperature: {:.2} C, Humidity: {:.2} %", m.co2, m.temp, m.rh);
-            },
-            (true, Err(e)) => {
-                error!("Error reading sensor data: {:?}", e);
+        for _i in 0..10 {
+            match sensor.read_data() {
+                Ok(m) => {
+                    info!("CO2: {:.2} ppm, Temperature: {:.2} C, Humidity: {:.2} %", m.co2, m.temp, m.rh);
+                    break;
+                },
+                Err(e) => {
+                    warn!("Error reading sensor data: {:?}", e);
+                    errors += 1;
+                },
+            }
+
+            if errors > opts.allowed_errors {
+                error!("Exceeded maximum allowed I2C errors");
                 std::process::exit(-5);
-            },
-        };
+            }
+        }
 
         // Wait for enough time for another sensor reading
         std::thread::sleep(*opts.period);
