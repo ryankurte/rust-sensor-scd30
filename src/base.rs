@@ -69,21 +69,25 @@ impl <Conn, Err> Base<Err> for Conn where
 
         trace!("Writing command: {:?} data: {:?}", c, data);
 
-        self.write(DEFAULT_ADDRESS | I2C_WRITE_FLAG, &buff[..len]).map_err(|e| Error::Conn(e) )
+        self.write((DEFAULT_ADDRESS << 1) | I2C_WRITE_FLAG, &buff[..len]).map_err(|e| Error::Conn(e) )
     }
 
     fn read_command(&mut self, command: Command, data: &mut [u8]) -> Result<(), Error<Err>> {
         // Write command to initialise read
         let c = command as u16;
+        let cmd = [(c >> 8) as u8, (c & 0xFF) as u8];
 
-        trace!("Writing command: {:x?}", c);
+        trace!("Writing command: {:x?}", cmd);
 
-        self.write(DEFAULT_ADDRESS | I2C_WRITE_FLAG, &[(c >> 8) as u8, (c & 0xFF) as u8])
+        // First write the read command
+        self.write((DEFAULT_ADDRESS << 1) | I2C_WRITE_FLAG, &cmd)
             .map_err(|e| Error::Conn(e) )?;
 
-        // Read data back
-        self.read(DEFAULT_ADDRESS | I2C_READ_FLAG, data)
+        // Then, read the data back
+        self.read((DEFAULT_ADDRESS << 1) | I2C_READ_FLAG, data)
             .map_err(|e| Error::Conn(e) )?;
+
+        // Note: this two-phase approach is specified in the datasheet
 
         trace!("Read data: {:x?}", data);
 

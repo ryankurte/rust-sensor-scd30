@@ -4,6 +4,7 @@
 
 
 /// Scd30 default I2C address
+/// (note this is shifted left 1 bit on the wire)
 pub const DEFAULT_ADDRESS: u8 = 0x61;
 
 pub const I2C_WRITE_FLAG: u8 = 0x00;
