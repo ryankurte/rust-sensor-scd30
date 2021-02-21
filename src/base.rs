@@ -1,5 +1,5 @@
 //! Base communication implementation for interacting with Scd30 device
-//! 
+//!
 //! Copyright 2019 Ryan Kurte
 
 use core::fmt::Debug;
@@ -37,7 +37,7 @@ pub fn crc8(data: &[u8]) -> u8 {
         }
     }
 
-    // Apply final xor    
+    // Apply final xor
     crc ^ CRC_XOR
 }
 
@@ -69,7 +69,7 @@ impl <Conn, Err> Base<Err> for Conn where
 
         trace!("Writing command: {:?} data: {:?}", c, data);
 
-        self.write((DEFAULT_ADDRESS << 1) | I2C_WRITE_FLAG, &buff[..len]).map_err(|e| Error::Conn(e) )
+        self.write(DEFAULT_ADDRESS, &buff[..len]).map_err(|e| Error::Conn(e) )
     }
 
     fn read_command(&mut self, command: Command, data: &mut [u8]) -> Result<(), Error<Err>> {
@@ -80,11 +80,11 @@ impl <Conn, Err> Base<Err> for Conn where
         trace!("Writing command: {:x?}", cmd);
 
         // First write the read command
-        self.write((DEFAULT_ADDRESS << 1) | I2C_WRITE_FLAG, &cmd)
+        self.write(DEFAULT_ADDRESS, &cmd)
             .map_err(|e| Error::Conn(e) )?;
 
         // Then, read the data back
-        self.read((DEFAULT_ADDRESS << 1) | I2C_READ_FLAG, data)
+        self.read(DEFAULT_ADDRESS, data)
             .map_err(|e| Error::Conn(e) )?;
 
         // Note: this two-phase approach is specified in the datasheet
@@ -112,6 +112,6 @@ mod test {
             let v = crc8(&t.0);
             assert_eq!(v, t.1);
         }
-        
+
     }
 }
