@@ -1,5 +1,5 @@
 //! Scd30 device definitions
-//! 
+//!
 //! Copyright 2019 Ryan Kurte
 
 
