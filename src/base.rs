@@ -5,6 +5,7 @@
 use core::fmt::Debug;
 
 use embedded_hal::blocking::i2c;
+use log::trace;
 
 use crate::{Error};
 use crate::device::*;
@@ -69,7 +70,7 @@ impl <Conn, Err> Base<Err> for Conn where
 
         trace!("Writing command: {:?} data: {:?}", c, data);
 
-        self.write((DEFAULT_ADDRESS << 1) | I2C_WRITE_FLAG, &buff[..len]).map_err(|e| Error::Conn(e) )
+        self.write(DEFAULT_ADDRESS | I2C_WRITE_FLAG, &buff[..len]).map_err(|e| Error::Conn(e) )
     }
 
     fn read_command(&mut self, command: Command, data: &mut [u8]) -> Result<(), Error<Err>> {
@@ -80,11 +81,11 @@ impl <Conn, Err> Base<Err> for Conn where
         trace!("Writing command: {:x?}", cmd);
 
         // First write the read command
-        self.write((DEFAULT_ADDRESS << 1) | I2C_WRITE_FLAG, &cmd)
+        self.write(DEFAULT_ADDRESS | I2C_WRITE_FLAG, &cmd)
             .map_err(|e| Error::Conn(e) )?;
 
         // Then, read the data back
-        self.read((DEFAULT_ADDRESS << 1) | I2C_READ_FLAG, data)
+        self.read(DEFAULT_ADDRESS | I2C_READ_FLAG, data)
             .map_err(|e| Error::Conn(e) )?;
 
         // Note: this two-phase approach is specified in the datasheet

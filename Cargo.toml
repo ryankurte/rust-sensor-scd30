@@ -5,7 +5,7 @@ repository = "https://github.com/ryankurte/rust-sensor-scd30"
 keywords = ["embedded", "embedded-hal", "scd30", "sensor", "i2c"]
 version = "0.3.0"
 authors = ["Ryan Kurte <ryankurte@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "MPL-2.0"
 
 [features]
